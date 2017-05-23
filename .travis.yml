@@ -6,5 +6,5 @@ addons:
     packages:
     - shellcheck
 script:
-- bash shellcheck spotkey.sh
+- shellcheck spotkey.sh
 - bash spotkey.sh
