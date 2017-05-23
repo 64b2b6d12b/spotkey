@@ -24,5 +24,5 @@ NEXT_URL="$(jq --raw-output '.next' < ${STARTING_FILE}_${PLAYLIST_ID}.json)"
 done
 
 for i in *.json; do
-jq --raw-output '["Track URI","Artist","Song"], (.items[].track | [.uri, .artists[0].name, .name]) | @csv' < $i | tr -d '"' >> output.csv
+jq --raw-output '["Track URI","Artist","Song"], (.items[].track | [.uri, .artists[0].name, .name]) | @csv' < "$i" | tr -d '"' >> output.csv
 done
