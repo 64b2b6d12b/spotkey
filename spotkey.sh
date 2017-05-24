@@ -12,17 +12,16 @@ PLAYLIST_ID=""
 
 STARTING_FILE=0
 
+#Get first 100 tracks due to Spotify's restriction
 curl -s -X GET "https://api.spotify.com/v1/users/${SPOTIFY_USER}/playlists/${PLAYLIST_ID}/tracks" -H "Accept: application/json" -H "Authorization: Bearer ${ACCESS_TOKEN}" > ${STARTING_FILE}_${PLAYLIST_ID}.json
+jq --raw-output '["track_uri","artist","track"], (.items[].track | [.uri, .artists[0].name, .name]) | @csv' < ${STARTING_FILE}_${PLAYLIST_ID}.json >> ${PLAYLIST_ID}.csv
 
+#If there are more than 100 tracks Spotify's will return the next URL, if less than 100 tracks, Spotify will return "null"
 NEXT_URL="$(jq --raw-output '.next' < ${STARTING_FILE}_${PLAYLIST_ID}.json)"
-
 while [ "$NEXT_URL" != "null" ]
 do
 (( STARTING_FILE++ ))
 curl -s -X GET "${NEXT_URL}" -H "Accept: application/json" -H "Authorization: Bearer ${ACCESS_TOKEN}" > ${STARTING_FILE}_${PLAYLIST_ID}.json
+jq --raw-output '.items[].track | [.uri, .artists[0].name, .name] | @csv' < ${STARTING_FILE}_${PLAYLIST_ID}.json >> ${PLAYLIST_ID}.csv
 NEXT_URL="$(jq --raw-output '.next' < ${STARTING_FILE}_${PLAYLIST_ID}.json)"
-done
-
-for i in *.json; do
-jq --raw-output '["Track URI","Artist","Song"], (.items[].track | [.uri, .artists[0].name, .name]) | @csv' < "$i" | tr -d '"' >> output.csv
 done
