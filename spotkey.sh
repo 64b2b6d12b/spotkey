@@ -2,7 +2,7 @@
 
 . spotkey.conf
 
-B64="$(echo -ne ${ID}:${SECRET} | base64 -w 0)"
+B64="$(echo -ne "${ID}":"${SECRET}" | base64 -w 0)"
 #Generate Spotify Access Token as per https://developer.spotify.com/web-api/authorization-guide/#client-credentials-flow
 TOKEN="$(curl -s -X POST https://accounts.spotify.com/api/token -H "authorization: Basic ${B64}" -H "content-type: application/x-www-form-urlencoded" -d grant_type=client_credentials | jq --raw-output '.access_token')"
 URL="https://api.spotify.com/v1"
