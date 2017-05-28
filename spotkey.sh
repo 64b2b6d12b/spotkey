@@ -1,14 +1,10 @@
 #!/bin/bash
 
-#Replace ID & SECRET with values generated from https://developer.spotify.com/my-applications
-ID=""
-SECRET=""
+. spotkey.conf
+
 B64="$(echo -ne ${ID}:${SECRET} | base64 -w 0)"
 #Generate Spotify Access Token as per https://developer.spotify.com/web-api/authorization-guide/#client-credentials-flow
 TOKEN="$(curl -s -X POST https://accounts.spotify.com/api/token -H "authorization: Basic ${B64}" -H "content-type: application/x-www-form-urlencoded" -d grant_type=client_credentials | jq --raw-output '.access_token')"
-#Replace USER with your Spotify username and PLAYLIST with the Playlist ID that you would like to sort
-USER=""
-PLAYLIST=""
 URL="https://api.spotify.com/v1"
 
 #Download the initial tracks and save the URI, first Artist Name and Track Name in to tracks.csv
