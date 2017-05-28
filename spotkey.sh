@@ -48,3 +48,17 @@ jq --raw-output '.audio_features[] | [.uri, .key, .tempo] | @csv' < "${i}" >> fe
 done
 
 rm -f ./*.json && rm -f ./*.txt
+
+#Create SQLite tables, insert CSV in to tables, run the SELECT statement
+sqlite3 spotkey.db << EOF
+CREATE TABLE tracks (track_uri  VARCHAR (36)  PRIMARY KEY NOT NULL, artist VARCHAR (100) NOT NULL, track_name VARCHAR (100) NOT NULL) WITHOUT ROWID;
+CREATE TABLE features (track_uri VARCHAR (36) PRIMARY KEY NOT NULL, [key] INTEGER NOT NULL, tempo INTEGER NOT NULL) WITHOUT ROWID;
+.mode csv
+.import tracks.csv tracks
+.import features.csv features
+.headers on
+.output export.csv
+SELECT tracks.track_uri, tracks.artist, tracks.track_name, features."key", features.tempo FROM tracks INNER JOIN features ON tracks.track_uri = features.track_uri ORDER BY key ASC, tempo ASC;
+EOF
+
+rm -f tracks.csv && rm -f features.csv
