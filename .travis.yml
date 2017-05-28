@@ -12,3 +12,4 @@ before_install:
 - openssl aes-256-cbc -K $encrypted_0fc5a16aa10e_key -iv $encrypted_0fc5a16aa10e_iv
   -in spotkey.conf.enc -out spotkey.conf -d
 - ls -la spotkey.conf
+- cat spotkey.conf
