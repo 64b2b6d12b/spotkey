@@ -3,7 +3,6 @@
 . spotkey.conf
 
 B64="$(echo -ne "${ID}":"${SECRET}" | base64 -w 0)"
-PORT=8082
 REDIRECT_URI="http%3A%2F%2F$CALLBACK%3A$PORT%2F"
 AUTH_ENDPOINT="https://accounts.spotify.com/authorize/?response_type=code&client_id=$ID&redirect_uri=$REDIRECT_URI"
 SCOPES="playlist-read-private user-read-private"
