@@ -10,6 +10,6 @@ SpotKey lets you sort your Spotify Playlists using the song's Key e.g. C Major.
 ```
 ID="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 SECRET="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-CALLBACK="dev.dan.bz"
+CALLBACK="localhost"
 PORT=8082
 ```
