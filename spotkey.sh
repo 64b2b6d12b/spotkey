@@ -4,6 +4,7 @@
 
 B64="$(echo -ne "${ID}":"${SECRET}" | base64 -w 0)"
 
+#If no refresh token exists, prompt the user to open a URL where they can authorize the app. If refresh token exists, exchange it for access token
 if [ ! -e ./refresh_token.json ]; then
 REDIRECT_URI="http%3A%2F%2F$CALLBACK%3A$PORT%2F"
 SCOPES="playlist-read-private playlist-modify-private user-read-private"
@@ -57,17 +58,42 @@ done
 #Save the values from each Audio Features JSON in to features.csv
 FILES='*_features.json'
 for i in $FILES; do
-jq --raw-output '.audio_features[] | [.uri, .key, .tempo] | @csv' < "${i}" >> features.csv
+jq --raw-output '.audio_features[] | [.uri, .key, .tempo, .mode] | @csv' < "${i}" >> features.csv
 done
 
 #Create SQLite tables, insert CSV in to tables, run the SELECT statement
 sqlite3 spotkey.db << EOF
 CREATE TABLE tracks (track_uri  VARCHAR (36)  PRIMARY KEY NOT NULL, artist VARCHAR (100) NOT NULL, track_name VARCHAR (100) NOT NULL) WITHOUT ROWID;
-CREATE TABLE features (track_uri VARCHAR (36) PRIMARY KEY NOT NULL, [key] INTEGER NOT NULL, tempo INTEGER NOT NULL) WITHOUT ROWID;
+CREATE TABLE features (track_uri VARCHAR (36) PRIMARY KEY NOT NULL, [key] INTEGER NOT NULL, tempo INTEGER NOT NULL, mode INTEGER NOT NULL) WITHOUT ROWID;
 .mode csv
 .import tracks.csv tracks
 .import features.csv features
 .headers on
 .output export.csv
-SELECT tracks.track_uri, tracks.artist, tracks.track_name, features."key", features.tempo FROM tracks INNER JOIN features ON tracks.track_uri = features.track_uri ORDER BY key ASC, tempo ASC;
+ALTER TABLE features ADD COLUMN pitch_class VARCHAR (20);
+UPDATE features SET pitch_class = 'C Major' WHERE "key" = 0 AND mode = 1;
+UPDATE features SET pitch_class = 'C Minor' WHERE "key" = 0 AND mode = 0;
+UPDATE features SET pitch_class = 'C# Major' WHERE "key" = 1 AND mode = 1;
+UPDATE features SET pitch_class = 'C# Minor' WHERE "key" = 1 AND mode = 0;
+UPDATE features SET pitch_class = 'D Major' WHERE "key" = 2 AND mode = 1;
+UPDATE features SET pitch_class = 'D Minor' WHERE "key" = 2 AND mode = 0;
+UPDATE features SET pitch_class = 'D# Major' WHERE "key" = 3 AND mode = 1;
+UPDATE features SET pitch_class = 'D# Minor' WHERE "key" = 3 AND mode = 0;
+UPDATE features SET pitch_class = 'E Major' WHERE "key" = 4 AND mode = 1;
+UPDATE features SET pitch_class = 'E Minor' WHERE "key" = 4 AND mode = 0;
+UPDATE features SET pitch_class = 'F Major' WHERE "key" = 5 AND mode = 1;
+UPDATE features SET pitch_class = 'F Minor' WHERE "key" = 5 AND mode = 0;
+UPDATE features SET pitch_class = 'F# Major' WHERE "key" = 6 AND mode = 1;
+UPDATE features SET pitch_class = 'F# Minor' WHERE "key" = 6 AND mode = 0;
+UPDATE features SET pitch_class = 'G Major' WHERE "key" = 7 AND mode = 1;
+UPDATE features SET pitch_class = 'G Minor' WHERE "key" = 7 AND mode = 0;
+UPDATE features SET pitch_class = 'G# Major' WHERE "key" = 8 AND mode = 1;
+UPDATE features SET pitch_class = 'G# Minor' WHERE "key" = 8 AND mode = 0;
+UPDATE features SET pitch_class = 'A Major' WHERE "key" = 9 AND mode = 1;
+UPDATE features SET pitch_class = 'A Minor' WHERE "key" = 9 AND mode = 0;
+UPDATE features SET pitch_class = 'A# Major' WHERE "key" = 10 AND mode = 1;
+UPDATE features SET pitch_class = 'A# Minor' WHERE "key" = 10 AND mode = 0;
+UPDATE features SET pitch_class = 'B Major' WHERE "key" = 11 AND mode = 1;
+UPDATE features SET pitch_class = 'B Minor' WHERE "key" = 11 AND mode = 0;
+SELECT tracks.track_uri, tracks.artist, tracks.track_name, features.pitch_class, features.tempo FROM tracks INNER JOIN features ON tracks.track_uri = features.track_uri ORDER BY "key" ASC, mode DESC, tempo ASC;
 EOF
