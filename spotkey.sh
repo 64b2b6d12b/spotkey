@@ -3,23 +3,26 @@
 . spotkey.conf
 
 B64="$(echo -ne "${ID}":"${SECRET}" | base64 -w 0)"
+
+if [ ! -e ./refresh_token.json ]; then
 REDIRECT_URI="http%3A%2F%2F$CALLBACK%3A$PORT%2F"
-AUTH_ENDPOINT="https://accounts.spotify.com/authorize/?response_type=code&client_id=$ID&redirect_uri=$REDIRECT_URI"
-SCOPES="playlist-read-private user-read-private"
-if [[ ! -z $SCOPES ]]
-then
-  ENCODED_SCOPES=$(echo $SCOPES | tr ' ' '%' | sed s/%/%20/g)
-  AUTH_ENDPOINT="$AUTH_ENDPOINT&scope=$ENCODED_SCOPES"
-fi
-
-echo "Please visit $AUTH_ENDPOINT"
-
+SCOPES="playlist-read-private playlist-modify-private user-read-private"
+ENCODED_SCOPES=$(echo $SCOPES | tr ' ' '%' | sed s/%/%20/g)
+AUTH_ENDPOINT="https://accounts.spotify.com/authorize/?response_type=code&client_id=$ID&redirect_uri=$REDIRECT_URI&scope=$ENCODED_SCOPES"
+echo "Please visit: $AUTH_ENDPOINT"
 RESPONSE=$(echo -e "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin:*\r\n" | nc -l $PORT)
 CODE=$(echo $RESPONSE | grep GET | cut -d ' ' -f 2 | cut -d '=' -f 2)
 RESPONSE=$(curl -s https://accounts.spotify.com/api/token -H "Content-Type:application/x-www-form-urlencoded" -H "Authorization: Basic $B64" -d "grant_type=authorization_code&code=$CODE&redirect_uri=$REDIRECT_URI")
 TOKEN=$(echo $RESPONSE | jq -r '.access_token')
-REFRESH_TOKEN=$(echo $RESPONSE | jq -r '.refresh_token')
+echo $RESPONSE | jq -r '.refresh_token' > refresh_token.json
+else
+REFRESH_TOKEN=$(cat refresh_token.json)
+TOKEN=$(curl -s -X POST https://accounts.spotify.com/api/token -H "Content-Type:application/x-www-form-urlencoded" -H "Authorization: Basic $B64" -d "grant_type=refresh_token&refresh_token=$REFRESH_TOKEN" | jq -r '.access_token')
+fi
+
 URL="https://api.spotify.com/v1"
+USER=$(curl -s -X GET "${URL}/me" -H "Accept: application/json" -H "Authorization: Bearer ${TOKEN}" | jq -r '.id')
+
 
 #Download the initial tracks and save the URI, first Artist Name and Track Name in to tracks.csv
 COUNT=0
@@ -56,8 +59,6 @@ FILES='*_features.json'
 for i in $FILES; do
 jq --raw-output '.audio_features[] | [.uri, .key, .tempo] | @csv' < "${i}" >> features.csv
 done
-
-rm -f ./*.json && rm -f ./*.txt
 
 #Create SQLite tables, insert CSV in to tables, run the SELECT statement
 sqlite3 spotkey.db << EOF
