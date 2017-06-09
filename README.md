@@ -23,5 +23,5 @@ PLAYLIST="59ZbFPES4DQwEjBpWHzrtC"
 4. Open `export.csv` in your favourite spreatsheet software and copy the track_uri column rows in to a blank (or existing) Playlist window with either the Spotify client or Spotify web site
 
 ## Todo
-..* Prompt user to select the Playlist
-..* Create a Playlist using the Spotify Web API rather than using a CSV file
+* Prompt user to select the Playlist
+* Create a Playlist using the Spotify Web API rather than using a CSV file
