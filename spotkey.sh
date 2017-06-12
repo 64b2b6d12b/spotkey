@@ -36,7 +36,6 @@ echo "---------------------"
 echo "Please copy and paste the name of the playlist you would like to sort and then press ENTER:"
 read selected_playlist
 playlist=$(jq -r ".items[] | select(.name == \"${selected_playlist}\") | .id" < playlists.json)
-rm -f ./playlists.json
 }
 
 select_playlist
@@ -95,8 +94,6 @@ CREATE TABLE features (track_uri VARCHAR (36) PRIMARY KEY NOT NULL, [key] INTEGE
 .mode csv
 .import tracks.csv tracks
 .import features.csv features
-.headers on
-.output export.csv
 ALTER TABLE features ADD COLUMN pitch_class VARCHAR (20);
 UPDATE features SET pitch_class = 'C Major' WHERE "key" = 0 AND mode = 1;
 UPDATE features SET pitch_class = 'C Minor' WHERE "key" = 0 AND mode = 0;
@@ -122,15 +119,47 @@ UPDATE features SET pitch_class = 'A# Major' WHERE "key" = 10 AND mode = 1;
 UPDATE features SET pitch_class = 'A# Minor' WHERE "key" = 10 AND mode = 0;
 UPDATE features SET pitch_class = 'B Major' WHERE "key" = 11 AND mode = 1;
 UPDATE features SET pitch_class = 'B Minor' WHERE "key" = 11 AND mode = 0;
-SELECT tracks.track_uri, tracks.artist, tracks.track_name, features.pitch_class, features.tempo FROM tracks INNER JOIN features ON tracks.track_uri = features.track_uri ORDER BY "key" ASC, mode DESC, tempo ASC;
+.output export.csv
+SELECT tracks.track_uri FROM tracks INNER JOIN features ON tracks.track_uri = features.track_uri ORDER BY "key" ASC, mode DESC, tempo ASC;
 EOF
 }
 
 csv2sqlite3
 
+create_playlist () {
+created_playlist_id=$(curl -s -X POST "${url}/users/${user}/playlists" -H "Content-Type: application/json" -H "Authorization: Bearer ${token}" -d "{\"name\":\"${selected_playlist}_sorted\", \"public\":false}" | jq -r '.id') 
+}
+
+create_playlist
+
+add_tracks_to_playlist () {
+sed -i -e 's/^\|$/"/g' export.csv
+split -l 100 export.csv split_
+count=0
+files="split_*"
+for i in $files
+do
+  cat "$i" | tr '\n' ',' | sed '$ s/,$//' > "${count}"_split.txt
+  (( count++ ))
+done
+count=0
+files="*_split.txt"
+for i in $files
+do
+  uris_to_send=$(cat "${i}")
+  curl -s -o /dev/null -X POST "${url}/users/${user}/playlists/${created_playlist_id}/tracks" -H "Content-Type: application/json" -H "Authorization: Bearer ${token}" -d "{\"uris\": [${uris_to_send}]}"
+done
+}
+
+add_tracks_to_playlist
+
 clean () {
 rm -f ./*_features.json && rm -f ./*_id.txt && rm -f ./*_tracks.json
 rm -f ./features.csv && rm -f ./tracks.csv
+rm -f ./playlists.json
+rm -f ./split_*
+rm -f ./*_split.txt
+rm -f ./export.csv
 }
 
 clean
