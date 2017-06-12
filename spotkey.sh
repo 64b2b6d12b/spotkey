@@ -26,6 +26,21 @@ oauth2
 url="https://api.spotify.com/v1"
 user=$(curl -s -X GET "${url}/me" -H "Accept: application/json" -H "Authorization: Bearer ${token}" | jq -r '.id')
 
+select_playlist () {
+curl -s -X GET "${url}/me/playlists" -H "Authorization: Bearer ${token}" > playlists.json
+available_playlists=$(jq -r '.items[].name' < playlists.json)
+echo "Your available playlists are:"
+echo "---------------------"
+echo "${available_playlists}"
+echo "---------------------"
+echo "Please copy and paste the name of the playlist you would like to sort and then press ENTER:"
+read selected_playlist
+playlist=$(jq -r ".items[] | select(.name == \"${selected_playlist}\") | .id" < playlists.json)
+rm -f ./playlists.json
+}
+
+select_playlist
+
 tracks () {
 #Download the initial tracks and save the URI, first Artist Name and Track Name in to tracks.csv
 count=0
