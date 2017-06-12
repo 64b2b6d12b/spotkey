@@ -3,7 +3,6 @@
 oauth2 () {
 source spotkey.conf
 b64=$(echo -ne "${id}":"${secret}" | base64 -w 0)
-
 #If no refresh token exists, prompt the user to open a URL where they can authorize the app. If refresh token exists, exchange it for access token
 if [ ! -e ./refresh_token.json ]
 then
